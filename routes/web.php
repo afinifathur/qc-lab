@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/approvals',             [WorkflowController::class, 'queue'])->name('approvals.index');
     Route::post('/approvals/{sample}',   [WorkflowController::class, 'approve'])->name('approvals.approve');
     Route::post('/approvals/{sample}/reject', [WorkflowController::class,'reject'])->name('approvals.reject');
+    Route::get('/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('audit-logs.index');
 
     // ===== Reports (preview / download) =====
     Route::get('/reports/daily',         [\App\Http\Controllers\DailyReportController::class, 'index'])->name('reports.daily');

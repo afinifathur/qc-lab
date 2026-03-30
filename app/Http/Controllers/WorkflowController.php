@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sample;
+use App\Models\AuditLog;
 use App\Services\ReportNoService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -128,6 +129,19 @@ class WorkflowController extends Controller
         Storage::makeDirectory($dir);
         Storage::put($dir.'/'.$name, $pdf->output());
 
+        // === Audit Log ===
+        AuditLog::create([
+            'stamp_id'    => (string) Str::uuid(),
+            'user_id'     => auth()->id(),
+            'user_name'   => auth()->user()->name,
+            'user_role'   => auth()->user()->roles->first()?->name,
+            'action'      => 'APPROVE',
+            'entity_type' => get_class($sample),
+            'entity_id'   => $sample->id,
+            'ip'          => request()->ip(),
+            'user_agent'  => request()->userAgent(),
+        ]);
+
         return back()->with('ok', 'Disetujui. PDF tersimpan: '.$dir.'/'.$name);
     }
 
@@ -145,6 +159,19 @@ class WorkflowController extends Controller
             $sample->approved_at = null;
             $sample->approved_by = null;
             $sample->save();
+
+            // === Audit Log ===
+            AuditLog::create([
+                'stamp_id'    => (string) Str::uuid(),
+                'user_id'     => auth()->id(),
+                'user_name'   => auth()->user()->name,
+                'user_role'   => auth()->user()->roles->first()?->name,
+                'action'      => 'REVOKE',
+                'entity_type' => get_class($sample),
+                'entity_id'   => $sample->id,
+                'ip'          => request()->ip(),
+                'user_agent'  => request()->userAgent(),
+            ]);
         });
 
         return back()->with('ok', 'Persetujuan dibatalkan. Status kembali ke REVISI.');

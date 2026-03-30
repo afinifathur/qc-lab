@@ -223,6 +223,12 @@
                         <span class="material-symbols-outlined">task_alt</span>
                         <span>Heat Numbers Checkers</span>
                     </a>
+                    @if(in_array(auth()->user()->email, ['kabagqc@peroniks.com', 'direktur@peroniks.com']))
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('audit-logs.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('audit-logs.index') }}">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        <span>Audit Logs</span>
+                    </a>
+                    @endif
                 </nav>
                 <div class="px-4 mt-auto">
                     <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 border border-slate-100 dark:border-slate-700">
