@@ -119,7 +119,7 @@
 
 <script>
 $(function() {
-    $('#approvalTable').DataTable({
+    const table = $('#approvalTable').DataTable({
         pageLength: 25,
         order: [[0,'desc']],
         language: { search: "", searchPlaceholder: "Cari antrian..." }
@@ -127,29 +127,39 @@ $(function() {
 
     const sessionKey = (id) => 'reviewed-' + id;
 
+    // Function to update button states for visible rows
+    const updateButtonStates = () => {
+        $('.js-approve-btn').each(function() {
+            const id = $(this).data('sample-id');
+            try {
+                if (sessionStorage.getItem(sessionKey(id)) === '1') {
+                    $(this).prop('disabled', false);
+                }
+            } catch(e) {}
+        });
+    };
+
     const enableApprove = (id) => {
         try { sessionStorage.setItem(sessionKey(id), '1'); } catch(e) {}
         $(`.js-approve-btn[data-sample-id="${id}"]`).prop('disabled', false);
     };
 
-    // Restore buttons
-    $('.js-approve-btn').each(function() {
-        const id = $(this).data('sample-id');
-        try {
-            if (sessionStorage.getItem(sessionKey(id)) === '1') {
-                $(this).prop('disabled', false);
-            }
-        } catch(e) {}
+    // Run on initial load and every time the table is redrawn (pagination, search, sort)
+    table.on('draw', function() {
+        updateButtonStates();
     });
 
-    // Preview click handler
-    $('.js-preview').on('click', function() {
+    // Initial run
+    updateButtonStates();
+
+    // Preview click handler (using delegation for paginated rows)
+    $('#approvalTable').on('click', '.js-preview', function() {
         const id = $(this).data('sample-id');
         enableApprove(id);
     });
 
-    // Form submit guard
-    $('.js-approve-form').on('submit', function(e) {
+    // Form submit guard (using delegation for paginated rows)
+    $('#approvalTable').on('submit', '.js-approve-form', function(e) {
         const id = $(this).data('sample-id');
         try {
             if (sessionStorage.getItem(sessionKey(id)) !== '1') {
