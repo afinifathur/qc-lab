@@ -6,9 +6,17 @@
 
         <title>Laravel</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <!-- Local Fonts -->
+        <style>
+            @font-face {
+                font-family: 'Inter';
+                src: url("{{ asset('fonts/inter.woff2') }}") format('woff2');
+                font-weight: 100 900;
+                font-display: swap;
+                font-style: normal;
+            }
+            body { font-family: 'Inter', sans-serif; }
+        </style>
 
         <!-- Styles / Scripts -->
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))

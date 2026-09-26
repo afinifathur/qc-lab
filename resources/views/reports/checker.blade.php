@@ -2,7 +2,7 @@
 
 @push('head')
 <!-- Handsontable CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+<link rel="stylesheet" href="{{ asset('vendor/handsontable/handsontable.full.min.css') }}">
 <style>
     .htRowOk { background-color: #dcfce7 !important; } /* green-100 */
     .htRowFail { background-color: #fee2e2 !important; } /* red-100 */
@@ -50,7 +50,7 @@
 
 @push('scripts')
 <!-- Handsontable JS -->
-<script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<script src="{{ asset('vendor/handsontable/handsontable.full.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('hotContainer');
