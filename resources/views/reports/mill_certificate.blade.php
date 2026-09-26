@@ -43,6 +43,7 @@
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
                         <th rowspan="2" class="px-4 py-3 border-b border-r border-slate-100 dark:border-slate-800 text-center">Heat No.</th>
+                        <th rowspan="2" class="px-3 py-3 border-b border-r border-slate-100 dark:border-slate-800 text-center whitespace-nowrap">Grade</th>
                         <th colspan="9" class="px-4 py-2 border-b border-r border-slate-100 dark:border-slate-800 text-center">Chemical Composition (%)</th>
                         <th colspan="4" class="px-4 py-2 border-b border-r border-slate-100 dark:border-slate-800 text-center">Mechanical Property</th>
                         <th rowspan="2" class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 text-center w-[100px]">
@@ -112,10 +113,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return text ?? '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function renderGradeDisplay(item) {
+        if (!item.found || !item.grade || item.grade === '-') {
+            return '<span class="text-slate-400 font-medium">-</span>';
+        }
+
+        const gradeStr = String(item.grade);
+
+        // Only highlight "316" in maroon/dark red, prefix remains normal
+        if (item.is_316 && gradeStr.endsWith('/316')) {
+            const prefix = gradeStr.slice(0, -3); // e.g. "CF8M/", "1.4408/", "SCS 14A/"
+            return `<span class="text-slate-700 dark:text-slate-300 font-medium">${escapeHtml(prefix)}</span><span class="text-red-800 dark:text-red-400 font-bold">316</span>`;
+        }
+
+        return `<span class="text-slate-700 dark:text-slate-300 font-medium">${escapeHtml(gradeStr)}</span>`;
+    }
+
     function renderResults(data) {
         resultsBody.innerHTML = '';
         if (data.length === 0) {
-            resultsBody.innerHTML = '<tr><td colspan="15" class="px-4 py-8 text-center text-slate-500 italic">No samples found for the given Heat Numbers.</td></tr>';
+            resultsBody.innerHTML = '<tr><td colspan="16" class="px-4 py-8 text-center text-slate-500 italic">No samples found for the given Heat Numbers.</td></tr>';
             return;
         }
 
@@ -125,13 +152,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!item.found) {
                 row.className += ' bg-amber-50/30 dark:bg-amber-900/10';
             }
-            
+
             row.innerHTML = `
                 <td class="px-4 py-2 border-r border-slate-100 dark:border-slate-800 font-medium ${item.found ? 'text-slate-900 dark:text-white' : 'text-amber-600 dark:text-amber-500'}">
                     <div class="flex items-center gap-1.5">
                         ${!item.found ? '<span class="material-symbols-outlined text-[14px]">warning</span>' : ''}
                         ${item.heat_no}
                     </div>
+                </td>
+                <td class="px-3 py-2 border-r border-slate-100 dark:border-slate-800 text-center whitespace-nowrap">
+                    ${renderGradeDisplay(item)}
                 </td>
                 <td class="px-2 py-2 border-r border-slate-100 dark:border-slate-800 text-center">${item.chem.c}</td>
                 <td class="px-2 py-2 border-r border-slate-100 dark:border-slate-800 text-center">${item.chem.si}</td>

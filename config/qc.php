@@ -27,7 +27,7 @@ return [
                 'ys_mpa'    => [205, null],
                 'uts_mpa'   => [485, null],
                 'elong_pct' => [35, null],
-                'hb'        => [null, 187],
+                'hb'        => [null, 183],
             ],
         ],
 
@@ -47,7 +47,7 @@ return [
                 'ys_mpa'    => [205, null],
                 'uts_mpa'   => [485, null],
                 'elong_pct' => [30, null],
-                'hb'        => [null, 187],
+                'hb'        => [null, 183],
             ],
         ],
 
@@ -65,7 +65,7 @@ return [
                 'ys_mpa'    => [205, null],
                 'uts_mpa'   => [480, null],
                 'elong_pct' => [33, null],
-                'hb'        => [null, 187],
+                'hb'        => [null, 183],
             ],
         ],
 
@@ -84,7 +84,7 @@ return [
                 'ys_mpa'    => [205, null],
                 'uts_mpa'   => [480, null],
                 'elong_pct' => [33, null],
-                'hb'        => [null, 187],
+                'hb'        => [null, 183],
             ],
         ],
 
@@ -103,7 +103,7 @@ return [
                 'ys_mpa'    => [200, null],
                 'uts_mpa'   => [440, 640],
                 'elong_pct' => [30, null],
-                'hb'        => [null, 187],
+                'hb'        => [null, 183],
             ],
         ],
 
@@ -123,7 +123,7 @@ return [
                 'ys_mpa'    => [210, null],
                 'uts_mpa'   => [440, 640],
                 'elong_pct' => [30, null],
-                'hb'        => [null, 187],
+                'hb'        => [null, 183],
             ],
         ],
     ],

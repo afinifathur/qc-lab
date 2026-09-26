@@ -41,6 +41,8 @@ class MillCertificateController extends Controller
                 // Placeholder for 'Not Found' but maintains sequence
                 return [
                     'heat_no' => $heatNo,
+                    'grade'   => '-',
+                    'is_316'  => false,
                     'found'   => false,
                     'chem'    => array_fill_keys(['c','si', 'mn', 'p', 's', 'cr', 'ni', 'mo', 'fe'], '-'),
                     'mech'    => array_fill_keys(['ts', 'ys', 'el', 'hb'], '-'),
@@ -70,8 +72,13 @@ class MillCertificateController extends Controller
             // Fe calculation: 100 - sum of others
             $fe = 100 - ($c + $si + $mn + $p + $s_val + $cr + $ni + $mo);
 
+            // Grade Display Mapping
+            $gradeDisplayInfo = $this->resolveGradeDisplay($s->grade);
+
             return [
                 'heat_no' => $s->heat_no,
+                'grade'   => $gradeDisplayInfo['display'],
+                'is_316'  => $gradeDisplayInfo['is_316'],
                 'found'   => true,
                 'chem' => [
                     'c'  => number_format($c, 4, '.', ''),
@@ -90,7 +97,7 @@ class MillCertificateController extends Controller
                     'el' => $tensile->elong_pct ?? '-',
                     'hb' => $hardness->avg_value ?? '-',
                 ],
-                // For clipboard: TAB separated (Exclude Heat No)
+                // For clipboard: TAB separated (Exclude Heat No and Grade - exactly 13 fields)
                 'copy_string' => implode("\t", [
                     number_format($c, 4, '.', ''),
                     number_format($si, 4, '.', ''),
@@ -110,5 +117,35 @@ class MillCertificateController extends Controller
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Map raw database grade to display label and determine 316 classification
+     */
+    private function resolveGradeDisplay(?string $grade): array
+    {
+        if (empty($grade)) {
+            return [
+                'display' => '-',
+                'is_316'  => false,
+            ];
+        }
+
+        $map = [
+            'CF8'    => 'CF8/304',
+            'CF8M'   => 'CF8M/316',
+            '1.4308' => '1.4308/304',
+            '1.4408' => '1.4408/316',
+            'SCS13A' => 'SCS 13A/304',
+            'SCS14A' => 'SCS 14A/316',
+        ];
+
+        $display = $map[$grade] ?? $grade;
+        $is316 = str_ends_with($display, '/316') || in_array($grade, ['CF8M', '1.4408', 'SCS14A'], true);
+
+        return [
+            'display' => $display,
+            'is_316'  => $is316,
+        ];
     }
 }

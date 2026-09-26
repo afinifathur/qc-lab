@@ -22,7 +22,7 @@ class GradeSpecsSeeder extends Seeder
             ['304','ASTM A351','YS', 205.00, null, 'MPa'],
             ['304','ASTM A351','UTS',515.00, null, 'MPa'],
             ['304','ASTM A351','Elong',40.00, null, '%'],
-            ['304','ASTM A351','HB', null, 187.00, 'HB'],
+            ['304','ASTM A351','HB', null, 183.00, 'HB'],
 
             // 316 (umum)
             ['316','ASTM A351','C', null, 0.080, '%wt'],
@@ -37,7 +37,7 @@ class GradeSpecsSeeder extends Seeder
             ['316','ASTM A351','YS', 205.00, null, 'MPa'],
             ['316','ASTM A351','UTS',515.00, null, 'MPa'],
             ['316','ASTM A351','Elong',40.00, null, '%'],
-            ['316','ASTM A351','HB', null, 187.00, 'HB'],
+            ['316','ASTM A351','HB', null, 183.00, 'HB'],
         ];
 
         foreach ($rows as $r) {

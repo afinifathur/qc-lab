@@ -141,14 +141,44 @@
             /* Black */
             .text-black      { color: #000000 !important; }
         }
+
+        /* ===================================================
+           SIDEBAR COLLAPSE / MINIMIZE STYLES (Vanilla CSS)
+           =================================================== */
+        .sidebar-collapsed #appSidebar {
+            width: 68px !important;
+        }
+        .sidebar-collapsed #appSidebar .sidebar-text,
+        .sidebar-collapsed #appSidebar .sidebar-section-title,
+        .sidebar-collapsed #appSidebar .sidebar-footer {
+            display: none !important;
+        }
+        .sidebar-collapsed #appSidebar nav a {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
     </style>
+    <script>
+        // Synchronously apply collapsed state before render to prevent visual flicker
+        (function() {
+            try {
+                if (localStorage.getItem('qc_sidebar_collapsed') === '1') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
     @stack('head')
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
     <div class="flex h-screen flex-col">
         <!-- Top Navigation Bar -->
-        <header class="flex h-14 w-full items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 z-10">
-            <div class="flex items-center gap-4 shrink-0">
+        <header class="flex h-14 w-full items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-4 md:px-6 z-10">
+            <div class="flex items-center gap-3 shrink-0">
+                <button id="btnToggleSidebar" type="button" class="hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors" title="Toggle Sidebar (Expand/Collapse)">
+                    <span class="material-symbols-outlined text-[22px]">menu</span>
+                </button>
                 <div class="flex items-center justify-center rounded-lg bg-primary p-1.5 text-white">
                     <span class="material-symbols-outlined">precision_manufacturing</span>
                 </div>
@@ -186,51 +216,51 @@
 
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar Navigation -->
-            <aside class="w-60 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark hidden md:flex flex-col py-6">
-                <div class="px-4 mb-6">
+            <aside id="appSidebar" class="w-60 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark hidden md:flex flex-col py-6 transition-all duration-200 shrink-0">
+                <div class="px-4 mb-6 sidebar-section-title">
                     <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Main Menu</p>
                 </div>
                 <nav class="flex-1 px-2 space-y-1">
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('dashboard') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('dashboard') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('dashboard') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('dashboard') }}" title="Dashboard">
                         <span class="material-symbols-outlined">dashboard</span>
-                        <span>Dashboard</span>
+                        <span class="sidebar-text">Dashboard</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('samples.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('samples.index') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('samples.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('samples.index') }}" title="Chemical Testing">
                         <span class="material-symbols-outlined">biotech</span>
-                        <span>Chemical Testing</span>
+                        <span class="sidebar-text">Chemical Testing</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ (request()->routeIs('mechanical.*')) ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('mechanical.index') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ (request()->routeIs('mechanical.*')) ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('mechanical.index') }}" title="Mechanical Testing">
                         <span class="material-symbols-outlined">engineering</span>
-                        <span>Mechanical Testing</span>
+                        <span class="sidebar-text">Mechanical Testing</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors" href="#">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors" href="#" title="Supplementary Tests">
                         <span class="material-symbols-outlined">science</span>
-                        <span>Supplementary Tests</span>
+                        <span class="sidebar-text">Supplementary Tests</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('approvals.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('approvals.index') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('approvals.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('approvals.index') }}" title="Approvals">
                         <span class="material-symbols-outlined">rule</span>
-                        <span>Approvals</span>
+                        <span class="sidebar-text">Approvals</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->is('reports/daily*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('reports.daily') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->is('reports/daily*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('reports.daily') }}" title="Reports">
                         <span class="material-symbols-outlined">description</span>
-                        <span>Reports</span>
+                        <span class="sidebar-text">Reports</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('mill-certificate.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('mill-certificate.index') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('mill-certificate.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('mill-certificate.index') }}" title="Mill Certificate">
                         <span class="material-symbols-outlined">analytics</span>
-                        <span>Mill Certificate</span>
+                        <span class="sidebar-text">Mill Certificate</span>
                     </a>
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('checker.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('checker.index') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('checker.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('checker.index') }}" title="Heat Numbers Checkers">
                         <span class="material-symbols-outlined">task_alt</span>
-                        <span>Heat Numbers Checkers</span>
+                        <span class="sidebar-text">Heat Numbers Checkers</span>
                     </a>
                     @if(in_array(auth()->user()->email, ['kabagqc@peroniks.com', 'direktur@peroniks.com']))
-                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('audit-logs.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('audit-logs.index') }}">
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('audit-logs.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('audit-logs.index') }}" title="Audit Logs">
                         <span class="material-symbols-outlined">receipt_long</span>
-                        <span>Audit Logs</span>
+                        <span class="sidebar-text">Audit Logs</span>
                     </a>
                     @endif
                 </nav>
-                <div class="px-4 mt-auto">
+                <div class="px-4 mt-auto sidebar-footer">
                     <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 border border-slate-100 dark:border-slate-700">
                         <p class="text-xs font-semibold text-slate-500">System Status</p>
                         <div class="mt-2 flex items-center gap-2">
@@ -258,6 +288,19 @@
             </main>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnToggle = document.getElementById('btnToggleSidebar');
+            if (btnToggle) {
+                btnToggle.addEventListener('click', function() {
+                    const isCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+                    try {
+                        localStorage.setItem('qc_sidebar_collapsed', isCollapsed ? '1' : '0');
+                    } catch (e) {}
+                });
+            }
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>
