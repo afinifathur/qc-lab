@@ -71,6 +71,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/heat-number-checker', [\App\Http\Controllers\HeatNumberCheckerController::class, 'index'])->name('checker.index');
     Route::post('/heat-number-checker/verify', [\App\Http\Controllers\HeatNumberCheckerController::class, 'verify'])->name('checker.verify');
 
+    // ===== Standard Reference (Read-Only) =====
+    Route::get('/standard-references', [\App\Http\Controllers\StandardReferenceController::class, 'index'])->name('standard-references.index');
+
     // ===== Mechanical Testing =====
     Route::get('/mechanical/data',                 [\App\Http\Controllers\MechanicalController::class, 'data'])->name('mechanical.data');
     Route::get('/mechanical',                 [\App\Http\Controllers\MechanicalController::class, 'index'])->name('mechanical.index');

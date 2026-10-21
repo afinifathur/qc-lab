@@ -55,10 +55,17 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Grade / Material <span class="text-red-500">*</span></label>
+                    @php
+                        $materials = $materials ?? config('qc.materials', []);
+                        $grades = $grades ?? array_keys($materials);
+                    @endphp
                     <select name="grade" id="grade" class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary" required>
-                        @foreach(['CF8','CF8M','SCS13A','SCS14A','1.4308','1.4408'] as $g)
+                        @foreach($grades as $g)
+                            @php
+                                $label = $materials[$g]['label'] ?? ($materials[$g]['alias'] ? "{$g} ({$materials[$g]['alias']})" : $g);
+                            @endphp
                             <option value="{{ $g }}" {{ old('grade', $sample->grade) === $g ? 'selected' : '' }}>
-                                {{ $g }}
+                                {{ $label }}
                             </option>
                         @endforeach
                     </select>
@@ -138,11 +145,7 @@
 
 @push('scripts')
 <script>
-const MAP_STD = {
-  "CF8":"ASTM A351","CF8M":"ASTM A351",
-  "SCS13A":"JIS G 5121","SCS14A":"JIS G 5121",
-  "1.4308":"BS EN 10213","1.4408":"BS EN 10213",
-};
+const MAP_STD = @json(collect($materials)->mapWithKeys(fn($m, $k) => [$k => $m['standard'] ?? '']));
 function applyStandard(){ 
     const grade = document.getElementById('grade').value;
     document.getElementById('standard').value = MAP_STD[grade] || ''; 

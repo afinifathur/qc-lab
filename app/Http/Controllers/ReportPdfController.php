@@ -32,42 +32,46 @@ class ReportPdfController extends Controller
 
         $sample->load(['spectroResult','tensileTest','hardnessTest']);
 
-        // === Hindari bug "dot-notation" untuk key grade bertitik (1.4308/1.4408) ===
-        $materialsAll = config('qc.materials', []);
-        $paramsAll    = config('qc.params', []);
-
-        $material = $materialsAll[$sample->grade] ?? [];
-        $limits   = $paramsAll[$sample->grade]    ?? ['chem' => [], 'mech' => []];
-
-        // Standard: utamakan nilai di DB; jika kosong, ambil dari config; fallback aman
+        // === Ambil standard & limits dari QCSpecificationService ===
+        $limits   = \App\Services\QCSpecificationService::getLimitsForGrade($sample->grade);
         $standard = $sample->standard
-            ?: ($material['standard'] ?? (in_array($sample->grade, ['1.4308','1.4408'], true) ? 'BS EN 10213' : 'ASTM A351'));
+            ?: \App\Services\QCSpecificationService::getStandardForGrade($sample->grade);
 
-        // Evaluasi PASS/FAIL berdasarkan $limits dari config
-        $eval = $this->evaluate($sample, $limits);
+        // Evaluasi PASS/FAIL terpusat
+        $eval = \App\Services\QCSpecificationService::evaluateSample($sample);
 
         // === base64 image helper ===
         $img = function (string $relPath): ?string {
             $path = public_path($relPath);
-            if (!is_file($path)) return null;
-            $ext = pathinfo($path, PATHINFO_EXTENSION);
-            return 'data:image/'.$ext.';base64,'.base64_encode(file_get_contents($path));
+            if (!is_file($path)) {
+                $altPath = storage_path('app/public/' . preg_replace('#^storage/#', '', $relPath));
+                if (is_file($altPath)) {
+                    $path = $altPath;
+                } else {
+                    return null;
+                }
+            }
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mime = $ext === 'svg' ? 'image/svg+xml' : 'image/'.$ext;
+            return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
         };
 
         // folder: public/storage/assets/*.png
-        $logoData      = $img('storage/assets/logo.png');
-        $signatureData = $img('storage/assets/signature.png');
-        $stampImgData  = $img('storage/assets/stamp.png');
+        $logoData           = $img('storage/assets/logo.png');
+        $signatureData      = $img('storage/assets/signature.png');
+        $signatureAdminData = $img('storage/assets/signature_admin.png');
+        $stampImgData       = $img('storage/assets/stamp.png');
 
         $pdf = Pdf::loadView('reports.pdf', [
-            'sample'        => $sample,
-            'isPreview'     => $isPreview,
-            'stampUser'     => $user?->name ?? 'guest',
-            'stampTime'     => $stampTime,
-            'stampId'       => $stampId,
-            'logoData'      => $logoData,
-            'signatureData' => $signatureData,
-            'stampImgData'  => $stampImgData,
+            'sample'             => $sample,
+            'isPreview'          => $isPreview,
+            'stampUser'          => $user?->name ?? 'guest',
+            'stampTime'          => $stampTime,
+            'stampId'            => $stampId,
+            'logoData'           => $logoData,
+            'signatureData'      => $signatureData,
+            'signatureAdminData' => $signatureAdminData,
+            'stampImgData'       => $stampImgData,
 
             // === data tambahan untuk PDF ===
             'standard'      => $standard, // tampilkan standard dari DB/config (bukan config() langsung di Blade)

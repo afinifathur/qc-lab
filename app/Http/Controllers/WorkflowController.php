@@ -78,42 +78,45 @@ class WorkflowController extends Controller
         // Relasi nilai uji
         $sample->load(['spectroResult', 'tensileTest', 'hardnessTest']);
 
-        // === Ambil standard & limits TANPA dot-notation (aman untuk key "1.4308"/"1.4408") ===
-        $materialsAll = config('qc.materials', []);
-        $paramsAll    = config('qc.params', []);
-
-        $material = $materialsAll[$sample->grade] ?? [];
-        $limits   = $paramsAll[$sample->grade]    ?? ['chem' => [], 'mech' => []];
-
-        // Standard: utamakan nilai yang tersimpan di DB; fallback ke config; fallback terakhir sesuai grade
+        // === Ambil standard & limits dari QCSpecificationService ===
+        $limits   = \App\Services\QCSpecificationService::getLimitsForGrade($sample->grade);
         $standard = $sample->standard
-            ?: ($material['standard'] ?? (in_array($sample->grade, ['1.4308','1.4408'], true) ? 'BS EN 10213' : 'ASTM A351'));
+            ?: \App\Services\QCSpecificationService::getStandardForGrade($sample->grade);
 
         // === Siapkan aset (base64) agar DomPDF tidak gagal load dari path lokal ===
         $embed = function (string $relPath): ?string {
             $path = public_path($relPath);
-            if (!is_file($path)) return null;
+            if (!is_file($path)) {
+                $altPath = storage_path('app/public/' . preg_replace('#^storage/#', '', $relPath));
+                if (is_file($altPath)) {
+                    $path = $altPath;
+                } else {
+                    return null;
+                }
+            }
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
             $mime = $ext === 'svg' ? 'image/svg+xml' : 'image/'.$ext;
             return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
         };
 
-        $logoData      = $embed('storage/assets/logo.png');
-        $stampImgData  = $embed('storage/assets/stamp.png');
-        $signatureData = $embed('storage/assets/signature.png');
+        $logoData           = $embed('storage/assets/logo.png');
+        $stampImgData       = $embed('storage/assets/stamp.png');
+        $signatureData      = $embed('storage/assets/signature.png');
+        $signatureAdminData = $embed('storage/assets/signature_admin.png');
 
         // === Render view PDF (FIX: selalu kirim 'isPreview' agar Blade tidak error) ===
         $pdf = Pdf::loadView('pdf.report', [
-            'sample'        => $sample,
-            'isPreview'     => false, // << PENTING: hindari "Undefined variable $isPreview"
-            'stampUser'     => auth()->user()?->name ?? 'system',
-            'stampTime'     => now('Asia/Jakarta')->format('Y-m-d H:i:s'),
-            'stampId'       => (string) Str::uuid(),
+            'sample'             => $sample,
+            'isPreview'          => false, // << PENTING: hindari "Undefined variable $isPreview"
+            'stampUser'          => auth()->user()?->name ?? 'system',
+            'stampTime'          => now('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'stampId'            => (string) Str::uuid(),
 
             // gambar base64
-            'logoData'      => $logoData,
-            'signatureData' => $signatureData,
-            'stampImgData'  => $stampImgData,
+            'logoData'           => $logoData,
+            'signatureData'      => $signatureData,
+            'signatureAdminData' => $signatureAdminData,
+            'stampImgData'       => $stampImgData,
 
             // untuk template yang mengambil standard/limit
             'standard'      => $standard,

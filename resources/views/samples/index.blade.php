@@ -66,10 +66,9 @@
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Grade</label>
             <select id="fltGrade" class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
                 <option value="">(Semua Grade)</option>
-                <option>304</option>
-                <option>316</option>
-                <option>1.4308</option>
-                <option>1.4408</option>
+                @foreach(($grades ?? array_keys(config('qc.materials', []))) as $g)
+                    <option value="{{ $g }}">{{ $g }}</option>
+                @endforeach
             </select>
         </div>
         <div class="flex justify-end">

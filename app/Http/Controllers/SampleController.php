@@ -9,6 +9,8 @@ use App\Models\HardnessTest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use App\Services\QCSpecificationService;
 
 class SampleController extends Controller
 {
@@ -16,7 +18,8 @@ class SampleController extends Controller
     public function index()
     {
         // View utama sekarang kosong, data akan dimuat via AJAX
-        return view('samples.index');
+        $grades = QCSpecificationService::getGrades();
+        return view('samples.index', compact('grades'));
     }
 
     /** AJAX data for DataTables */
@@ -145,11 +148,12 @@ class SampleController extends Controller
         }
         abort_unless(auth()->user()->hasRole('Operator'), 403);
 
-        // Opsi dropdown
-        $grades = ['CF8', 'CF8M', 'SCS13A', 'SCS14A', '1.4308', '1.4408'];
+        // Opsi dropdown dari single source of truth
+        $grades = QCSpecificationService::getGrades();
+        $materials = QCSpecificationService::getMaterials();
         $productTypes = ['Flange', 'Fitting'];
 
-        return view('samples.create', compact('grades', 'productTypes'));
+        return view('samples.create', compact('grades', 'materials', 'productTypes'));
     }
 
     /** Simpan sample baru sebagai DRAFT */
@@ -159,7 +163,7 @@ class SampleController extends Controller
 
         $rules = [
             // Identitas
-            'grade'        => 'required|in:CF8,CF8M,SCS13A,SCS14A,1.4308,1.4408',
+            'grade'        => ['required', 'string', Rule::in(QCSpecificationService::getGrades())],
             'standard'     => 'nullable|string',
             'product_type' => 'nullable|string',
             'heat_no'      => 'nullable|string',
@@ -242,11 +246,12 @@ class SampleController extends Controller
 
         $sample->load(['spectroResult']);
 
-        // Opsi dropdown untuk halaman Edit
-        $grades = ['CF8', 'CF8M', 'SCS13A', 'SCS14A', '1.4308', '1.4408'];
+        // Opsi dropdown untuk halaman Edit dari single source of truth
+        $grades = QCSpecificationService::getGrades();
+        $materials = QCSpecificationService::getMaterials();
         $productTypes = ['Flange', 'Fitting'];
 
-        return view('samples.edit', compact('sample', 'grades', 'productTypes'));
+        return view('samples.edit', compact('sample', 'grades', 'materials', 'productTypes'));
     }
 
     /** Update DRAFT/REJECTED */
@@ -261,7 +266,7 @@ class SampleController extends Controller
 
         $rules = [
             // Identitas
-            'grade'        => 'required|in:CF8,CF8M,SCS13A,SCS14A,1.4308,1.4408',
+            'grade'        => ['required', 'string', Rule::in(QCSpecificationService::getGrades())],
             'standard'     => 'nullable|string',
             'product_type' => 'nullable|string',
             'heat_no'      => 'nullable|string',
@@ -402,16 +407,10 @@ class SampleController extends Controller
     }
 
     /**
-     * Resolve standard berdasarkan grade tanpa terjebak "dot notation"
+     * Resolve standard berdasarkan grade dari single source of truth
      */
     private function resolveStandard(string $grade): string
     {
-        $materials = config('qc.materials', []);           // ambil seluruh array
-        $mat       = $materials[$grade] ?? null;           // index manual (aman untuk key bertitik)
-
-        return $mat['standard'] ?? match ($grade) {
-            '1.4308', '1.4408' => 'BS EN 10213',
-            default            => 'ASTM A351',
-        };
+        return QCSpecificationService::getStandardForGrade($grade);
     }
 }

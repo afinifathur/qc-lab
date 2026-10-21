@@ -150,7 +150,7 @@
     padding: 0 8px;
   }
   .sign-area {
-    height: 90px;
+    height: 112px;
     position: relative;
     text-align: center;
     padding: 1px 0;
@@ -161,21 +161,37 @@
     font-size: 9.2pt;
     color: #111;
   }
+  .admin-sig-img {
+    position: absolute;
+    left: 50%;
+    top: 11px;
+    margin-left: -32px;
+    width: 64px;
+    height: 64px;
+    opacity: 0.95;
+  }
+  .checked-bottom-block {
+    position: absolute;
+    bottom: 0px;
+    left: 0;
+    right: 0;
+    text-align: center;
+  }
   .qc-passed-badge {
-    font-size: 11pt;
+    font-size: 9.5pt;
     font-weight: bold;
     color: #6b21a8;
-    border: 1.5px solid #6b21a8;
+    border: 1.2px solid #6b21a8;
     display: inline-block;
-    padding: 2.5px 12px;
-    margin-top: 13px;
+    padding: 1.5px 10px;
     letter-spacing: 0.5px;
   }
   .qc-verif-text {
-    font-size: 7.8pt;
+    font-size: 7.5pt;
     font-weight: 500;
     color: #111;
-    margin-top: 11px;
+    margin-top: 12px;
+    margin-bottom: 0px;
   }
   .stamp-img {
     position: absolute;
@@ -229,15 +245,51 @@
   /** Status approved */
   $approved = strtoupper((string)($sample->status ?? '')) === 'APPROVED';
 
-  /** Config limits & materials */
-  $paramsAll    = config('qc.params', []);
-  $materialsAll = config('qc.materials', []);
+  /** Status submitted or approved (Checked By signature allowed) */
+  $checkedByApproved = in_array(strtoupper((string)($sample->status ?? '')), ['SUBMITTED', 'APPROVED'], true);
 
-  $cfg  = $paramsAll[$sample->grade ?? ''] ?? ['chem'=>[], 'mech'=>[]];
+  /** Signature Admin fallback if not explicitly passed */
+  $signatureAdminData = $signatureAdminData ?? null;
+  if (!$signatureAdminData && $checkedByApproved) {
+      $adminPath = public_path('storage/assets/signature_admin.png');
+      if (!is_file($adminPath)) {
+          $adminPath = storage_path('app/public/assets/signature_admin.png');
+      }
+      if (is_file($adminPath)) {
+          $signatureAdminData = 'data:image/png;base64,' . base64_encode(file_get_contents($adminPath));
+      }
+  }
+
+  /** Signature Kabag fallback if not explicitly passed */
+  $signatureData = $signatureData ?? null;
+  if (!$signatureData && $approved) {
+      $kabagPath = public_path('storage/assets/signature.png');
+      if (!is_file($kabagPath)) {
+          $kabagPath = storage_path('app/public/assets/signature.png');
+      }
+      if (is_file($kabagPath)) {
+          $signatureData = 'data:image/png;base64,' . base64_encode(file_get_contents($kabagPath));
+      }
+  }
+
+  /** Stamp fallback if not explicitly passed */
+  $stampImgData = $stampImgData ?? null;
+  if (!$stampImgData && $approved) {
+      $stampPath = public_path('storage/assets/stamp.png');
+      if (!is_file($stampPath)) {
+          $stampPath = storage_path('app/public/assets/stamp.png');
+      }
+      if (is_file($stampPath)) {
+          $stampImgData = 'data:image/png;base64,' . base64_encode(file_get_contents($stampPath));
+      }
+  }
+
+  /** Config limits & materials via QCSpecificationService */
+  $cfg  = \App\Services\QCSpecificationService::getLimitsForGrade($sample->grade ?? '');
   $chem = $cfg['chem'] ?? [];
   $mech = $cfg['mech'] ?? [];
 
-  $stdFromCfg = $materialsAll[$sample->grade ?? '']['standard'] ?? 'ASTM A351';
+  $stdFromCfg = \App\Services\QCSpecificationService::getStandardForGrade($sample->grade ?? '');
 
   /** Helpers */
   $fmt = function($v, $dec = 3) {
@@ -251,10 +303,7 @@
   };
 
   $judge = function($val, $min, $max) {
-      if (is_null($val) || (is_null($min) && is_null($max))) return '—';
-      if (!is_null($min) && $val < $min) return 'FAIL';
-      if (!is_null($max) && $val > $max) return 'FAIL';
-      return 'PASS';
+      return \App\Services\QCSpecificationService::judge($val, $min, $max);
   };
 
   $actual = fn($obj, $field) => $obj ? ($obj->{$field} ?? null) : null;
@@ -340,92 +389,35 @@
     </tr>
   </thead>
   <tbody>
-    @php $no = 1; @endphp
+    @php
+      $no = 1;
+      $chemOrder = \App\Services\QCSpecificationService::getChemDisplayOrder();
+      $chemDecimals = [
+          'c' => 4, 'si' => 4, 'mn' => 4, 'p' => 4, 's' => 4,
+          'cr' => 2, 'ni' => 2,
+          'mo' => 3, 'cu' => 3, 'co' => 3, 'al' => 3, 'v' => 3
+      ];
+    @endphp
 
-    {{-- Chemical 1 - 12 --}}
-    @php [$min,$max] = $range('c'); $val = $actual($s,'c'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Carbon (C)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 4) }}</td><td class="right">{{ $fmt($min, 4) }}</td><td class="right">{{ $fmt($max, 4) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('si'); $val = $actual($s,'si'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Silicon (Si)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 4) }}</td><td class="right">{{ $fmt($min, 4) }}</td><td class="right">{{ $fmt($max, 4) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('mn'); $val = $actual($s,'mn'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Manganese (Mn)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 4) }}</td><td class="right">{{ $fmt($min, 4) }}</td><td class="right">{{ $fmt($max, 4) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('p'); $val = $actual($s,'p'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Phosphorus (P)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 4) }}</td><td class="right">{{ $fmt($min, 4) }}</td><td class="right">{{ $fmt($max, 4) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('s'); $val = $actual($s,'s'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Sulphur (S)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 4) }}</td><td class="right">{{ $fmt($min, 4) }}</td><td class="right">{{ $fmt($max, 4) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('cr'); $val = $actual($s,'cr'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Chromium (Cr)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 2) }}</td><td class="right">{{ $fmt($min, 2) }}</td><td class="right">{{ $fmt($max, 2) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('ni'); $val = $actual($s,'ni'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Nickel (Ni)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 2) }}</td><td class="right">{{ $fmt($min, 2) }}</td><td class="right">{{ $fmt($max, 2) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('mo'); $val = $actual($s,'mo'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Molybdenum (Mo)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 3) }}</td><td class="right">{{ $fmt($min, 3) }}</td><td class="right">{{ $fmt($max, 3) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('cu'); $val = $actual($s,'cu'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Copper (Cu)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 3) }}</td><td class="right">{{ $fmt($min, 3) }}</td><td class="right">{{ $fmt($max, 3) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('co'); $val = $actual($s,'co'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Cobalt (Co)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 3) }}</td><td class="right">{{ $fmt($min, 3) }}</td><td class="right">{{ $fmt($max, 3) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('al'); $val = $actual($s,'al'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Aluminium (Al)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 3) }}</td><td class="right">{{ $fmt($min, 3) }}</td><td class="right">{{ $fmt($max, 3) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
-
-    @php [$min,$max] = $range('v'); $val = $actual($s,'v'); $unit = '% wt'; @endphp
-    <tr>
-      <td class="center">{{ $no++ }}</td><td>Vanadium (V)</td><td class="center">{{ $unit }}</td>
-      <td class="right">{{ $fmt($val, 3) }}</td><td class="right">{{ $fmt($min, 3) }}</td><td class="right">{{ $fmt($max, 3) }}</td>
-      <td class="center {{ $judge($val,$min,$max)==='FAIL'?'fail':'' }}">{{ $judge($val,$min,$max) }}</td>
-    </tr>
+    @foreach($chemOrder as $el)
+      @php
+        [$min, $max] = $range($el);
+        $val = $actual($s, $el);
+        $unit = '% wt';
+        $dec = $chemDecimals[$el] ?? 3;
+        $label = \App\Services\QCSpecificationService::getChemLabel($el);
+        $status = $judge($val, $min, $max);
+      @endphp
+      <tr>
+        <td class="center">{{ $no++ }}</td>
+        <td>{{ $label }}</td>
+        <td class="center">{{ $unit }}</td>
+        <td class="right">{{ $fmt($val, $dec) }}</td>
+        <td class="right">{{ $fmt($min, $dec) }}</td>
+        <td class="right">{{ $fmt($max, $dec) }}</td>
+        <td class="center {{ $status === 'FAIL' ? 'fail' : '' }}">{{ $status }}</td>
+      </tr>
+    @endforeach
   </tbody>
 </table>
 
@@ -479,14 +471,12 @@
 <div class="static-section">
   <div class="sec-heading">Reference Standard :</div>
   <ul class="ref-list">
-    <li>ASTM A351 (CF8, CF8M)</li>
-    <li>JIS G 5121 (SCS 13A, SCS 14A)</li>
-    <li>BS EN ISO 10213 (1.4308, 1.4408)</li>
+    <li>{{ $sample->standard ?: $stdFromCfg }} ({{ $sample->grade ?: '—' }})</li>
   </ul>
 
   <div class="sec-heading">Composition testing methods</div>
   <div class="sec-body">
-    Chemical composition is verified by Optical Emission Spectrometry (OES) in accordance with the applicable material standards: ASTM A351/A351M, JIS G5121, and EN 10283.
+    Chemical composition is verified by Optical Emission Spectrometry (OES) in accordance with the applicable material standards: ASTM A351/A351M, JIS G5121, and EN 10213.
   </div>
 
   <div class="sec-heading">Tensile Testing Method</div>
@@ -508,12 +498,17 @@
 <!-- Signatures: Checked by (Left - Purple) & Approved By (Right - Existing Stamp/Date) Without Box Borders -->
 <table class="sign-wrapper">
   <tr>
-    <!-- Left: Checked by (Static, Purple) -->
+    <!-- Left: Checked by (Admin Lab Signature above QC PASSED) -->
     <td>
       <div class="sign-area">
         <div class="sign-title">Checked by</div>
-        <div class="qc-passed-badge">QC PASSED</div>
-        <div class="qc-verif-text">QC Verification</div>
+        @if($checkedByApproved && !empty($signatureAdminData))
+          <img class="admin-sig-img" src="{{ $signatureAdminData }}" alt="Admin Signature">
+        @endif
+        <div class="checked-bottom-block">
+          <div class="qc-passed-badge">QC PASSED</div>
+          <div class="qc-verif-text">QC Verification</div>
+        </div>
       </div>
     </td>
 

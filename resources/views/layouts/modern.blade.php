@@ -253,6 +253,10 @@
                         <span class="material-symbols-outlined">task_alt</span>
                         <span class="sidebar-text">Heat Numbers Checkers</span>
                     </a>
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('standard-references.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('standard-references.index') }}" title="Standard Reference">
+                        <span class="material-symbols-outlined">menu_book</span>
+                        <span class="sidebar-text">Standard Reference</span>
+                    </a>
                     @if(in_array(auth()->user()->email, ['kabagqc@peroniks.com', 'direktur@peroniks.com']))
                     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('audit-logs.*') ? 'bg-primary text-white font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors' }}" href="{{ route('audit-logs.index') }}" title="Audit Logs">
                         <span class="material-symbols-outlined">receipt_long</span>
